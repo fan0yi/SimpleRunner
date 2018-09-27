@@ -23,7 +23,9 @@ public class Page4Fragment extends android.support.v4.app.Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_page4, container, false);
+        View view = inflater.inflate(R.layout.fragment_page4, container, false);
+        new slideUp(this, view);
+        return view;
     }
 
 }
