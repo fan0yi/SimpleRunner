@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         setContentView(R.layout.activity_main);
         detector = new GestureDetector(this, this);
 
-        googleFit();
+        getGoogleFitAPI();
     }
 
     private void slideUp(){
@@ -125,6 +125,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
             accessGoogleFit();
         }
     }
+    private Task<DataReadResponse> response;
+    List<DataSet> dataSets;
 
     private void accessGoogleFit() {
         //在用戶授權訪問所請求的數據後，為您的應用創建所需的GoogleApi客戶端（例如HistoryClient，讀取和/或寫入歷史健身數據）：
@@ -134,45 +136,9 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         cal.add(Calendar.YEAR, -1);
         long startTime = cal.getTimeInMillis();
 
-        DataReadRequest readRequest = new DataReadRequest.Builder()
-                .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
-                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-                .build();
-
-
-        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
-                .readData(readRequest)
-                .addOnSuccessListener(new OnSuccessListener() {
-                    @Override
-                    public void onSuccess(Object o) {
-                        Log.d("Success", "onSuccess()");
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e("Failure", "onFailure()", e);
-                    }
-                })
-                .addOnCompleteListener(new OnCompleteListener() {
-                    @Override
-                    public void onComplete(@NonNull Task task) {
-                        Log.d("Complete", "onComplete()");
-                    }
-                });
-    }
-
-    private void googleFit(){
-        Calendar cal = Calendar.getInstance();
-        Date now = new Date();
-        cal.setTime(now);
-        long endTime = cal.getTimeInMillis();
-        cal.add(Calendar.WEEK_OF_YEAR, -1);
-        long startTime = cal.getTimeInMillis();
-
         java.text.DateFormat dateFormat = DateFormat.getDateInstance();
-        Log.i("googleFit", "Range Start: " + dateFormat.format(startTime));
-        Log.i("googleFit", "RangeEnd: " + dateFormat.format(endTime));
+        Log.i("Start", dateFormat.format(startTime));
+        Log.i("End", dateFormat.format(endTime));
 
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
@@ -180,10 +146,22 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                 .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                 .build();
 
-        Task<DataReadResponse> response = Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this)).readData(readRequest);
-        List<DataSet> dataSet = response.getResult().getDataSets();
-    }
 
+        response = Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readData(readRequest);
+        response.addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
+            @Override
+            public void onSuccess(DataReadResponse dataReadResponse) {
+                dataSets = response.getResult().getDataSets();
+            }
+        });
+
+        Log.i("dataSets", dataSets+"");
+        for(DataSet ds : dataSets){
+            dumpDataSet(ds);
+        }
+
+    }
     private static void dumpDataSet(DataSet dataSet){
         Log.i("dumpDataSet", "Data returned for Data type: " + dataSet.getDataType().getName());
         java.text.DateFormat dateFormat = DateFormat.getTimeInstance();
