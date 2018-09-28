@@ -9,6 +9,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.DatePicker;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.fitness.Fitness;
@@ -33,6 +37,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
 
     GestureDetector detector;
     private static final int GOOGLE_FIT_PERMISSIONS_REQUEST_CODE = 0 ;
+    private int year, month, day;
+    private StringBuffer date, time;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -192,4 +198,25 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
             }
         }
     }
+
+
+    public void setDatePicker(View view) {
+        DatePicker mDatePicker = null ;
+        Calendar mCalendar = null ;
+        mCalendar = Calendar.getInstance();
+        year = mCalendar.get(Calendar.YEAR);
+        month = mCalendar.get(Calendar.MONTH) + 1;
+        day = mCalendar.get(Calendar.DAY_OF_MONTH);
+        mDatePicker = findViewById(R.id.datePicker);
+        mDatePicker.init(year, month, day, new DatePicker.OnDateChangedListener() {
+            @Override
+            public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                Toast.makeText(MainActivity.this,
+                        year + "年" + (monthOfYear+1) + "月" + dayOfMonth + "日",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
 }
