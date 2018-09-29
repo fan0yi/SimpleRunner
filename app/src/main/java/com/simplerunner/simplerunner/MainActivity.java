@@ -17,6 +17,7 @@ import android.widget.Toast;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.FitnessOptions;
+import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataType;
@@ -103,7 +104,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         //如果需要授權流程，請處理用戶的響應：
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
-                accessGoogleFit();
+                //readHistoryData();
+                readData();
             }
         }
     }
@@ -122,18 +124,62 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     GoogleSignIn.getLastSignedInAccount(this),
                     fitnessOptions);
         } else {
-            accessGoogleFit();
+            //readHistoryData();
+            readData();
         }
     }
-    private Task<DataReadResponse> response;
-    List<DataSet> dataSets;
 
-    private void accessGoogleFit() {
-        //在用戶授權訪問所請求的數據後，為您的應用創建所需的GoogleApi客戶端（例如HistoryClient，讀取和/或寫入歷史健身數據）：
+    private void readData(){
+        Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readDailyTotal(DataType.TYPE_STEP_COUNT_DELTA)
+                .addOnSuccessListener(new OnSuccessListener<DataSet>() {
+                    @Override
+                    public void onSuccess(DataSet dataSet) {
+                        long total = dataSet.isEmpty()
+                                ? 0
+                                : dataSet.getDataPoints().get(0).getValue(Field.FIELD_STEPS).asInt();
+                        Log.i("TOTAL_STEP", total+"");
+                    }
+                });
+    }
+    /*
+    private Task<DataReadResponse> readHistoryData(){
+        DataReadRequest readRequest = queryFitnessData();
+
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readData(readRequest)
+                .addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
+                    @Override
+                    public void onSuccess(DataReadResponse dataReadResponse) {
+                        printData(dataReadResponse);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("onFailure", "There was a problem reading the data.", e);
+                    }
+                });
+    }
+    */
+
+    private static void printData(DataReadResponse dataReadResult) {
+        if(dataReadResult.getBuckets().size() > 0){
+            Log.i("printData", "Number of returned buckets of DataSets is:" + dataReadResult.getBuckets().size());
+            for(Bucket bucket : dataReadResult.getBuckets()){
+                List<DataSet> dataSets = bucket.getDataSets();
+                for(DataSet dataSet : dataSets){
+                    dumpDataSet(dataSet);
+                }
+            }
+        }
+    }
+
+    public static DataReadRequest queryFitnessData(){
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Date());
         long endTime = cal.getTimeInMillis();
-        cal.add(Calendar.YEAR, -1);
+        cal.add(Calendar.WEEK_OF_YEAR, -1);
         long startTime = cal.getTimeInMillis();
 
         java.text.DateFormat dateFormat = DateFormat.getDateInstance();
@@ -145,23 +191,9 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                 .bucketByTime(1, TimeUnit.DAYS)
                 .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                 .build();
-
-
-        response = Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
-                .readData(readRequest);
-        response.addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
-            @Override
-            public void onSuccess(DataReadResponse dataReadResponse) {
-                dataSets = response.getResult().getDataSets();
-            }
-        });
-
-        Log.i("dataSets", dataSets+"");
-        for(DataSet ds : dataSets){
-            dumpDataSet(ds);
-        }
-
+        return readRequest;
     }
+
     private static void dumpDataSet(DataSet dataSet){
         Log.i("dumpDataSet", "Data returned for Data type: " + dataSet.getDataType().getName());
         java.text.DateFormat dateFormat = DateFormat.getTimeInstance();
@@ -176,7 +208,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
             }
         }
     }
-
 
     public void setDatePicker(View view) {
         DatePicker mDatePicker = null ;
