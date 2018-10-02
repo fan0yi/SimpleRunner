@@ -104,7 +104,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         //如果需要授權流程，請處理用戶的響應：
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
-                readData();
+                //readData();
+                readHistoryData();
             }
         }
     }
@@ -123,10 +124,11 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     GoogleSignIn.getLastSignedInAccount(this),
                     fitnessOptions);
         } else {
-            readData();
+            //readData();
+            readHistoryData();
         }
     }
-
+    /*
     private void readData(){
         Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
                 .readDailyTotal(DataType.TYPE_STEP_COUNT_DELTA)
@@ -140,7 +142,70 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     }
                 });
     }
+    */
 
+    private  Task<DataReadResponse> readHistoryData(){
+        DataReadRequest readRequest = queryFitnessData();
+
+        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
+                .readData(readRequest)
+                .addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
+                    @Override
+                    public void onSuccess(DataReadResponse dataReadResponse) {
+                        printData(dataReadResponse);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e("onFailure", "There was a problem reading the data.", e);
+                    }
+                });
+    }
+
+    private void printData(DataReadResponse dataReadResponse) {
+        if(dataReadResponse.getBuckets().size() > 0){
+            Log.i("printData", "Number of returned buckets of DataSets is: " + dataReadResponse.getBuckets().size());
+            for(Bucket bucket : dataReadResponse.getBuckets()){
+                List<DataSet> dataSets = bucket.getDataSets();
+                for(DataSet dataSet : dataSets){
+                    dumpDataSet(dataSet);
+                }
+            }
+        }
+    }
+
+    private void dumpDataSet(DataSet dataSet) {
+        Log.i("dumpDataSet", "Data returned for Data type: " + dataSet.getDataType().getName());
+        DateFormat dateFormat = DateFormat.getTimeInstance();
+        String TAG = "dp";
+        for(DataPoint dp : dataSet.getDataPoints()){
+            Log.i(TAG, "Data point:");
+            Log.i(TAG, "\tType: " + dp.getDataType().getName());
+            Log.i(TAG, "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
+            Log.i(TAG, "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
+            for (Field field : dp.getDataType().getFields()) {
+                Log.i(TAG, "\tField: " + field.getName() + " Value: " + dp.getValue(field));
+            }
+        }
+    }
+
+    private static DataReadRequest queryFitnessData() {
+        Calendar cal = Calendar.getInstance();
+        Date now = new Date();
+        cal.setTime(now);
+        long endTime = cal.getTimeInMillis();
+        cal.add(Calendar.WEEK_OF_YEAR, -1);
+        long startTime = cal.getTimeInMillis();
+
+        DataReadRequest readRequest = new DataReadRequest.Builder()
+                .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
+                .bucketByTime(1, TimeUnit.DAYS)
+                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                .build();
+
+        return readRequest;
+    }
 
 
     public void setDatePicker(View view) {
