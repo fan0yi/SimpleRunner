@@ -104,7 +104,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
         //如果需要授權流程，請處理用戶的響應：
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == GOOGLE_FIT_PERMISSIONS_REQUEST_CODE) {
-                //readHistoryData();
                 readData();
             }
         }
@@ -124,7 +123,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     GoogleSignIn.getLastSignedInAccount(this),
                     fitnessOptions);
         } else {
-            //readHistoryData();
             readData();
         }
     }
@@ -142,72 +140,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.O
                     }
                 });
     }
-    /*
-    private Task<DataReadResponse> readHistoryData(){
-        DataReadRequest readRequest = queryFitnessData();
 
-        return Fitness.getHistoryClient(this, GoogleSignIn.getLastSignedInAccount(this))
-                .readData(readRequest)
-                .addOnSuccessListener(new OnSuccessListener<DataReadResponse>() {
-                    @Override
-                    public void onSuccess(DataReadResponse dataReadResponse) {
-                        printData(dataReadResponse);
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e("onFailure", "There was a problem reading the data.", e);
-                    }
-                });
-    }
-    */
 
-    private static void printData(DataReadResponse dataReadResult) {
-        if(dataReadResult.getBuckets().size() > 0){
-            Log.i("printData", "Number of returned buckets of DataSets is:" + dataReadResult.getBuckets().size());
-            for(Bucket bucket : dataReadResult.getBuckets()){
-                List<DataSet> dataSets = bucket.getDataSets();
-                for(DataSet dataSet : dataSets){
-                    dumpDataSet(dataSet);
-                }
-            }
-        }
-    }
-
-    public static DataReadRequest queryFitnessData(){
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-        long endTime = cal.getTimeInMillis();
-        cal.add(Calendar.WEEK_OF_YEAR, -1);
-        long startTime = cal.getTimeInMillis();
-
-        java.text.DateFormat dateFormat = DateFormat.getDateInstance();
-        Log.i("Start", dateFormat.format(startTime));
-        Log.i("End", dateFormat.format(endTime));
-
-        DataReadRequest readRequest = new DataReadRequest.Builder()
-                .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
-                .bucketByTime(1, TimeUnit.DAYS)
-                .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-                .build();
-        return readRequest;
-    }
-
-    private static void dumpDataSet(DataSet dataSet){
-        Log.i("dumpDataSet", "Data returned for Data type: " + dataSet.getDataType().getName());
-        java.text.DateFormat dateFormat = DateFormat.getTimeInstance();
-
-        for(DataPoint dp: dataSet.getDataPoints()){
-            Log.i("DataPoint", "Data points:");
-            Log.i("DataPoint", "\tType: " + dp.getDataType().getName());
-            Log.i("DataPoint", "\tStart: " + dateFormat.format(dp.getStartTime(TimeUnit.MILLISECONDS)));
-            Log.i("DataPoint", "\tEnd: " + dateFormat.format(dp.getEndTime(TimeUnit.MILLISECONDS)));
-            for(Field field : dp.getDataType().getFields()){
-                Log.i("Field", "\tField: " + field.getName() + " Value: " + dp.getValue(field));
-            }
-        }
-    }
 
     public void setDatePicker(View view) {
         DatePicker mDatePicker = null ;
